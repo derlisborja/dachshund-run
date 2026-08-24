@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>Dachshund Run</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#87ceeb;font-family:Arial,sans-serif;overflow:hidden}
+#game{display:block;margin:auto;background:#87ceeb;max-width:100vw;max-height:100vh}
+#help{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);font-weight:bold;color:#222;text-align:center}
+</style>
+</head>
+<body>
+<canvas id="game" width="900" height="500"></canvas>
+<div id="help">ESPACIO / ↑ / TOCAR = saltar</div>
+<script>
+const c=document.getElementById("game"),ctx=c.getContext("2d");
+let dog,obstacles,bones,score,distance,speed,playing,gameOver,won,spawnO,spawnB;
+
+function reset(){
+ dog={x:100,y:350,w:105,h:50,vy:0,onGround:true};
+ obstacles=[]; bones=[]; score=0; distance=0; speed=7;
+ playing=false; gameOver=false; won=false; spawnO=0; spawnB=0;
+ addObstacle();
+}
+function addObstacle(){
+ const type=["piedra","tronco","arbusto"][Math.floor(Math.random()*3)];
+ const w=type==="tronco"?70:type==="piedra"?40:50;
+ const h=type==="tronco"?30:type==="piedra"?35:45;
+ obstacles.push({x:900+Math.random()*180,y:395-h,w,h,type});
+}
+function addBone(){
+ bones.push({x:900+100+Math.random()*300,y:250+Math.random()*100});
+}
+function jump(){
+ if(!playing){reset();playing=true;return}
+ if(dog.onGround){dog.vy=-18;dog.onGround=false}
+}
+addEventListener("keydown",e=>{
+ if(e.code==="Space"||e.code==="ArrowUp"){e.preventDefault();jump()}
+});
+addEventListener("pointerdown",jump);
+
+function rects(a,b){
+ return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
+}
+function drawDog(){
+ ctx.fillStyle="#a06437";ctx.beginPath();ctx.ellipse(dog.x+40,dog.y+20,45,22,0,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle="#af6e3c";ctx.beginPath();ctx.arc(dog.x+85,dog.y+8,26,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle="#643c25";ctx.beginPath();ctx.ellipse(dog.x+72,dog.y-4,10,22,-.2,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle="#222";ctx.beginPath();ctx.arc(dog.x+92,dog.y+3,4,0,Math.PI*2);ctx.fill();
+ ctx.beginPath();ctx.arc(dog.x+109,dog.y+15,5,0,Math.PI*2);ctx.fill();
+ ctx.strokeStyle="#784b28";ctx.lineWidth=7;
+ ctx.beginPath();ctx.moveTo(dog.x+15,dog.y+35);ctx.lineTo(dog.x+15,dog.y+52);ctx.moveTo(dog.x+62,dog.y+35);ctx.lineTo(dog.x+62,dog.y+52);ctx.stroke();
+ ctx.beginPath();ctx.moveTo(dog.x,dog.y+15);ctx.lineTo(dog.x-20,dog.y);ctx.stroke();
+}
+function drawObstacle(o){
+ if(o.type==="piedra"){ctx.fillStyle="#777";ctx.beginPath();ctx.ellipse(o.x+o.w/2,o.y+o.h/2,o.w/2,o.h/2,0,0,Math.PI*2);ctx.fill()}
+ else if(o.type==="tronco"){ctx.fillStyle="#784b28";ctx.fillRect(o.x,o.y,o.w,o.h)}
+ else{ctx.fillStyle="#288c32";ctx.beginPath();ctx.arc(o.x+25,o.y+25,25,0,Math.PI*2);ctx.fill()}
+}
+function drawBone(b){
+ ctx.strokeStyle="white";ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.lineTo(b.x+25,b.y+15);ctx.stroke();
+ ctx.fillStyle="white";
+ [[b.x,b.y],[b.x+5,b.y+7],[b.x+25,b.y+15],[b.x+20,b.y+8]].forEach(p=>{ctx.beginPath();ctx.arc(p[0],p[1],8,0,Math.PI*2);ctx.fill()});
+}
+function text(t,x,y,size=40,color="#222",align="left"){
+ ctx.fillStyle=color;ctx.font=`bold ${size}px Arial`;ctx.textAlign=align;ctx.fillText(t,x,y);
+}
+function draw(){
+ ctx.clearRect(0,0,900,500);
+ ctx.fillStyle="#87ceeb";ctx.fillRect(0,0,900,500);
+ ctx.fillStyle="white";ctx.beginPath();ctx.arc(150,100,30,0,Math.PI*2);ctx.arc(185,100,40,0,Math.PI*2);ctx.arc(220,100,30,0,Math.PI*2);ctx.fill();
+ ctx.beginPath();ctx.arc(650,150,30,0,Math.PI*2);ctx.arc(685,150,40,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle="#50b450";ctx.fillRect(0,395,900,105);
+ ctx.fillStyle="#784b28";ctx.fillRect(0,395,900,5);
+ obstacles.forEach(drawObstacle);bones.forEach(drawBone);drawDog();
+ text("Puntos: "+score,20,40);text("Meta: "+Math.min(distance,5000)+" / 5000",20,78);
+ if(!playing&&!gameOver&&!won){text("DACHSHUND RUN",450,200,65,"#222","center");text("Presiona ESPACIO o toca para comenzar",450,255,32,"#222","center")}
+ if(gameOver){text("GAME OVER",450,210,65,"#dc3c3c","center");text("Toca o presiona ESPACIO para volver a jugar",450,270,30,"#222","center")}
+ if(won){text("¡GANASTE!",450,190,65,"#149632","center");text("Llegaste a la META",450,245,34,"#222","center");text("Puntuación: "+score,450,290,32,"#222","center");text("Toca o presiona ESPACIO para jugar otra vez",450,340,28,"#222","center")}
+}
+function update(){
+ if(playing){
+  dog.vy+=1;dog.y+=dog.vy;
+  if(dog.y>=350){dog.y=350;dog.vy=0;dog.onGround=true}
+  obstacles.forEach(o=>o.x-=speed);bones.forEach(b=>b.x-=speed);
+  spawnO++;spawnB++;
+  if(spawnO>70+Math.random()*40){addObstacle();spawnO=0}
+  if(spawnB>150){addBone();spawnB=0}
+  obstacles=obstacles.filter(o=>o.x>-100);bones=bones.filter(b=>b.x>-50);
+  const dr={x:dog.x,y:dog.y,w:dog.w,h:dog.h};
+  for(const o of obstacles)if(rects(dr,o)){playing=false;gameOver=true}
+  bones=bones.filter(b=>{
+   const br={x:b.x-10,y:b.y-10,w:40,h:30};
+   if(rects(dr,br)){score+=100;return false}return true
+  });
+  score++;distance++;
+  if(score%500===0)speed+=.5;
+  if(distance>=5000){playing=false;won=true}
+ }
+ draw();requestAnimationFrame(update)
+}
+reset();update();
+</script>
+</body>
+</html>
